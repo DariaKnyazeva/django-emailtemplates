@@ -170,6 +170,10 @@ class EmailMessageTemplate(models.Model, EmailMessage):
         No-op to prevent EmailMessage from stomping on the template 
         """
         pass
+    
+    def prepare(self, context={}, to=[]):
+        self.context.update(context)
+        self.to = to
                         
     def send(self, fail_silently=False):
         """
