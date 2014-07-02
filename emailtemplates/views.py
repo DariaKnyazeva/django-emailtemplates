@@ -19,7 +19,7 @@ class EmailObjectMixin(object):
             raise Http404()
         self.related_object = get_object_or_404(self.object_model,
                                                 id=kwargs.get('object_id'))
-        return super(EmailMessageTemplateListView, self).dispatch(*args, **kwargs)
+        return super(EmailObjectMixin, self).dispatch(*args, **kwargs)
     
     def get_context_data(self, **kwargs):
         context = super(EmailObjectMixin, self).get_context_data(**kwargs)

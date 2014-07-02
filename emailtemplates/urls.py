@@ -6,7 +6,7 @@ from emailtemplates.views import EmailMessageTemplateListView,\
 
 
 urlpatterns = patterns('',
-    url(r'^(?P<object_id>\d+)/account/$', EmailMessageTemplateListView.as_view(), name="email_message_templates"),
+    url(r'^(?P<object_id>\d+)/email_templates/$', EmailMessageTemplateListView.as_view(), name="email_message_templates"),
     url(r'^(?P<object_id>\d+)/(?P<template_id>\d+)/customize/$', EmailMessageTemplateCustomizeView.as_view(), 
         name="email_message_template_customize"),
     url(r'^(?P<object_id>\d+)/(?P<template_id>\d+)/edit/$', EmailMessageTemplateEditView.as_view(), 
