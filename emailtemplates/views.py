@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.http.response import HttpResponseRedirect
@@ -10,15 +11,21 @@ from django.views.generic.list import ListView
 from emailtemplates.forms import EmailTemplateForm
 from emailtemplates.models import EmailMessageTemplate
 
-# TODO: check object permissions
+
 class EmailObjectMixin(object):
     object_model = None
+    
+    def get_object_permissions(self):
+        return []
     
     def dispatch(self, *args, **kwargs):
         if self.object_model is None:
             raise Http404()
         self.related_object = get_object_or_404(self.object_model,
                                                 id=kwargs.get('object_id'))
+        for perm in self.get_object_permissions():
+            if not self.request.user.has_perm(perm, self.related_object):
+                    raise PermissionDenied
         return super(EmailObjectMixin, self).dispatch(*args, **kwargs)
     
     def get_context_data(self, **kwargs):
@@ -33,7 +40,17 @@ class EmailTemplateMixin(object):
                                                   id=kwargs.get('template_id'))
         if not self.generic_template.can_override_per_object:
             raise Http404()
+        for perm in self.get_template_permissions():
+            if not self.request.user.has_perm(perm, self.generic_template):
+                    raise PermissionDenied
         return super(EmailTemplateMixin, self).dispatch(*args, **kwargs)
+    
+    def get_template_permissions(self):
+        """
+        Returns list of template-related permissions, 
+        e.g. can_view_template, can_edit_template
+        """
+        return []
     
     def get_success_url(self):
         return reverse('email_message_templates', 
