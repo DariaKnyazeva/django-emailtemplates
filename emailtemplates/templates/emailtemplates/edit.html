@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ object.name }}{% endblock %}
+
+{% block page_title %}Edit: {{ object.name }} {% endblock page_title %}
+
+{% block content %}
+{{ object.description }}
+<form method="POST" action="">
+    {% csrf_token%}
+    {{ form }}
+    <input type="submit" value="Submit"/>
+</form>
+{% endblock %}

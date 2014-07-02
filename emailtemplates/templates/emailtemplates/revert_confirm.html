@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Revert Email Template{% endblock %}
+
+{% block page_title %}Are you sure?{% endblock page_title %}
+
+{% block content %}
+	<p class="lead">Are you sure you want to revert to default Email Template for "{{object}}"? After you revert to default, the customized information will be permanently lost.</p>
+    <form method='POST' action="">{% csrf_token %}
+    	<div class="buttonHolder">
+    	    <button type="submit" name="submit" class="btn btn-danger">
+    	        <i class="fa fa-times-circle"></i> Revert to Default
+    	    </button> |
+    		<a href="{{cancel_url}}" class="btn btn-link">Cancel</a>
+    	</div>
+    </form>
+{% endblock content %}

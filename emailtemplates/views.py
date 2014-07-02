@@ -1,14 +1,14 @@
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
+from django.core.urlresolvers import reverse
 from django.http import Http404
+from django.http.response import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.views.generic.edit import DeleteView, UpdateView
 from django.views.generic.list import ListView
 
 from emailtemplates.forms import EmailTemplateForm
 from emailtemplates.models import EmailMessageTemplate
-from django.http.response import HttpResponseRedirect
-from django.core.urlresolvers import reverse
 
 # TODO: check object permissions
 class EmailObjectMixin(object):
@@ -23,7 +23,7 @@ class EmailObjectMixin(object):
     
     def get_context_data(self, **kwargs):
         context = super(EmailObjectMixin, self).get_context_data(**kwargs)
-        context['object'] = self.related_object
+        context['related_object'] = self.related_object
         return context  
 
 
@@ -31,7 +31,7 @@ class EmailTemplateMixin(object):
     def dispatch(self, *args, **kwargs):
         self.generic_template = get_object_or_404(EmailMessageTemplate, 
                                                   id=kwargs.get('template_id'))
-        if not self.generic_template.can_override_per_object():
+        if not self.generic_template.can_override_per_object:
             raise Http404()
         return super(EmailTemplateMixin, self).dispatch(*args, **kwargs)
     
@@ -44,7 +44,8 @@ class EmailMessageTemplateListView(EmailObjectMixin, ListView):
     """
     List of email message templates for the specified object
     """
-    model = EmailMessageTemplate    
+    model = EmailMessageTemplate
+    template_name = 'emailtemplates/list.html'    
     
     def get_queryset(self, **kwargs):
         tpl = []
@@ -62,8 +63,7 @@ class EmailMessageTemplateCustomizeView(EmailTemplateMixin, EmailObjectMixin, Up
     but associated to the specified object
     """
     model = EmailMessageTemplate 
-    object_model = None
-    template_name = 'emailtemplates/emailtemplate_edit.html'
+    template_name = 'emailtemplates/edit.html'
     form_class = EmailTemplateForm
     
     def get_object(self):
@@ -89,7 +89,7 @@ class EmailMessageTemplateEditView(EmailTemplateMixin, EmailObjectMixin, UpdateV
     """
     model = EmailMessageTemplate
     pk_url_kwarg = 'template_id' 
-    template_name = 'emailtemplates/email_template_edit.html'
+    template_name = 'emailtemplates/edit.html'
     form_class = EmailTemplateForm
     
     def form_valid(self, form):
@@ -104,7 +104,7 @@ class EmailMessageTemplateDeleteView(EmailTemplateMixin, EmailObjectMixin, Delet
     so that users fall back to the generic one. 
     """
     model = EmailMessageTemplate 
-    template_name = 'emailtemplates/email_template_revert_confirm.html'
+    template_name = 'emailtemplates/revert_confirm.html'
     pk_url_kwarg = 'template_id'
     
     def post(self, request, *args, **kwargs):
