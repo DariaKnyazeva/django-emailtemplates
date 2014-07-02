@@ -195,6 +195,9 @@ class EmailMessageTemplate(models.Model, EmailMultiAlternatives):
     def is_html_message(self):
         return settings.EMAILTEMPLATES_ALLOW_HTML_MESSAGES \
             and self.type == 'text/html'
+            
+    def is_customized(self):
+        return self.object_id
         
                         
     def send(self, fail_silently=False):
@@ -236,3 +239,4 @@ class EmailMessageTemplate(models.Model, EmailMultiAlternatives):
         ordering = ('name',)
         unique_together = (("name", "content_type", "object_id"),)
         verbose_name = "Email Template"
+        

@@ -3,6 +3,8 @@ from email.utils import getaddresses, formataddr
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 
+from emailtemplates.models import EmailMessageTemplate
+
 
 class EmailListField(forms.CharField):
     """
@@ -29,3 +31,16 @@ class EmailListField(forms.CharField):
             for name, addr in getaddresses([value])]
         except forms.ValidationError:
             raise forms.ValidationError(self.error_messages['invalid'])
+
+
+class EmailTemplateForm(forms.ModelForm):
+    class Meta:
+        model = EmailMessageTemplate
+        fields = ('subject_template', 'body_template')
+    
+    def save(self, user=None, *args, **kwargs):        
+        email = super(EmailTemplateForm, self).save(*args, **kwargs)
+        email.edited_user = '%s' % user
+        email.save()
+        return email
+
