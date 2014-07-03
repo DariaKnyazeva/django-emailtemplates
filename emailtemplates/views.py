@@ -1,10 +1,9 @@
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ImproperlyConfigured
 from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.http.response import HttpResponseRedirect
-from django.shortcuts import get_object_or_404
 from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import DeleteView, UpdateView
 from django.views.generic.list import ListView
@@ -14,48 +13,57 @@ from emailtemplates.models import EmailMessageTemplate
 
 
 class EmailObjectMixin(SingleObjectMixin):
-    object_model = None
-    
-    def get_object_permissions(self):
-        return []
+    object_model = None    
+    object_permissions = []
     
     def dispatch(self, *args, **kwargs):
-        if self.object_model is None:
-            raise Http404()
-        self.related_object = get_object_or_404(self.object_model,
-                                                id=kwargs.get('object_id'))
-        for perm in self.get_object_permissions():
+        self.related_object = self.get_object()
+        for perm in self.object_permissions:
             if not self.request.user.has_perm(perm, self.related_object):
                     raise PermissionDenied
         return super(EmailObjectMixin, self).dispatch(*args, **kwargs)
+    
+    def get_queryset(self):
+        """
+        Get the queryset to look an object up against. May not be called if
+        `get_object` is overridden.
+        """
+        if self.queryset is None:
+            if self.object_model:
+                return self.object_model._default_manager.all()
+            else:
+                raise ImproperlyConfigured("%(cls)s is missing a object_model." % {
+                                                'cls': self.__class__.__name__
+                                            })
+        return self.queryset._clone()
     
     def get_context_data(self, **kwargs):
         context = super(EmailObjectMixin, self).get_context_data(**kwargs)
         context['related_object'] = self.related_object
         return context  
-
-
-class EmailTemplateMixin(SingleObjectMixin):    
-    def dispatch(self, *args, **kwargs):
-        self.generic_template = get_object_or_404(EmailMessageTemplate, 
-                                                  id=kwargs.get('template_id'))
-        if not self.generic_template.can_override_per_object:
-            raise Http404()
-        for perm in self.get_template_permissions():
-            if not self.request.user.has_perm(perm, self.generic_template):
-                    raise PermissionDenied
-        return super(EmailTemplateMixin, self).dispatch(*args, **kwargs)
-    
-    def get_template_permissions(self):
-        """
-        Returns list of template-related permissions, 
-        e.g. can_view_template, can_edit_template
-        """
-        return []
     
     def get_success_url(self):
-        return reverse('email_message_templates', 
-                       kwargs={'object_id': self.related_object.id})
+        if self.pk_url_kwarg is not None:            
+            return reverse('email_message_templates', 
+                            kwargs={'%s' % self.pk_url_kwarg: self.related_object.id})
+        else:
+            return reverse('email_message_templates', 
+                            kwargs={'%s' % self.slug_url_kwarg: getattr(self.related_object, self.slug_field)})
+
+
+class EmailTemplateMixin(SingleObjectMixin):   
+    # list of template-related permissions, 
+    # e.g. can_view_template, can_edit_template
+    template_permissions = []    
+     
+    def dispatch(self, *args, **kwargs):
+        self.generic_template = self.get_object()
+        if not self.generic_template.can_override_per_object:
+            raise Http404()
+        for perm in self.template_permissions:
+            if not self.request.user.has_perm(perm, self.generic_template):
+                    raise PermissionDenied
+        return super(EmailTemplateMixin, self).dispatch(*args, **kwargs) 
 
 
 class EmailMessageTemplateListView(EmailObjectMixin, ListView):
