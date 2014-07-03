@@ -121,7 +121,7 @@ class EmailMessageTemplateListView(EmailObjectMixin, ListView):
             template = EmailMessageTemplate.objects.get_template(name['name'], 
                                                                  self.related_object)
             if template.can_override_per_object:
-                tpl.append()
+                tpl.append(template)
         ids = [t.id for t in tpl]
         return EmailMessageTemplate.objects.filter(id__in=ids)
 
