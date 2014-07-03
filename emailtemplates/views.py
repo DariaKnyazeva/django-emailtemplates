@@ -41,17 +41,9 @@ class EmailObjectMixin(SingleObjectMixin):
         context = super(EmailObjectMixin, self).get_context_data(**kwargs)
         context['related_object'] = self.related_object
         return context  
-    
-    def get_success_url(self):
-        if self.pk_url_kwarg is not None:            
-            return reverse('email_message_templates', 
-                            kwargs={'%s' % self.pk_url_kwarg: self.related_object.id})
-        else:
-            return reverse('email_message_templates', 
-                            kwargs={'%s' % self.slug_url_kwarg: getattr(self.related_object, self.slug_field)})
 
 
-class EmailTemplateMixin(SingleObjectMixin):   
+class EmailTemplateMixin(EmailObjectMixin):   
     # list of template-related permissions, 
     # e.g. can_view_template, can_edit_template
     template_permissions = []    
@@ -63,7 +55,15 @@ class EmailTemplateMixin(SingleObjectMixin):
         for perm in self.template_permissions:
             if not self.request.user.has_perm(perm, self.generic_template):
                     raise PermissionDenied
-        return super(EmailTemplateMixin, self).dispatch(*args, **kwargs) 
+        return super(EmailTemplateMixin, self).dispatch(*args, **kwargs)
+    
+    def get_success_url(self):
+        if self.pk_url_kwarg is not None:            
+            return reverse('email_message_templates', 
+                            kwargs={'%s' % self.pk_url_kwarg: self.related_object.id})
+        else:
+            return reverse('email_message_templates', 
+                            kwargs={'%s' % self.slug_url_kwarg: getattr(self.related_object, self.slug_field)}) 
 
 
 class EmailMessageTemplateListView(EmailObjectMixin, ListView):
