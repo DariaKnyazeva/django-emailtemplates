@@ -118,8 +118,10 @@ class EmailMessageTemplateListView(EmailObjectMixin, ListView):
         tpl = []
         names = EmailMessageTemplate.objects.values('name').distinct()
         for name in names:
-            tpl.append(EmailMessageTemplate.objects.get_template(name['name'], 
-                                                                 self.related_object))
+            template = EmailMessageTemplate.objects.get_template(name['name'], 
+                                                                 self.related_object)
+            if template.can_override_per_object:
+                tpl.append()
         ids = [t.id for t in tpl]
         return EmailMessageTemplate.objects.filter(id__in=ids)
 
