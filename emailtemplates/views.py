@@ -5,6 +5,7 @@ from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.http.response import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
+from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import DeleteView, UpdateView
 from django.views.generic.list import ListView
 
@@ -12,7 +13,7 @@ from emailtemplates.forms import EmailTemplateForm
 from emailtemplates.models import EmailMessageTemplate
 
 
-class EmailObjectMixin(object):
+class EmailObjectMixin(SingleObjectMixin):
     object_model = None
     
     def get_object_permissions(self):
@@ -34,7 +35,7 @@ class EmailObjectMixin(object):
         return context  
 
 
-class EmailTemplateMixin(object):    
+class EmailTemplateMixin(SingleObjectMixin):    
     def dispatch(self, *args, **kwargs):
         self.generic_template = get_object_or_404(EmailMessageTemplate, 
                                                   id=kwargs.get('template_id'))
