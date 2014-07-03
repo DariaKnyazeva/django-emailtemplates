@@ -11,7 +11,7 @@ setup(
     description='Templating system for application-generated emails',
     author='Michael O''Connor',
     author_email='michael@mcoconnor.net',
-    url='https://github.com/mcoconnor/django-emailtemplates',
+    url='https://github.com/DariaKnyazeva/django-emailtemplates.git',
     license='MIT',
     packages=['emailtemplates'],
     install_requires=[
