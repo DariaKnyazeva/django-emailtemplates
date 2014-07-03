@@ -1,10 +1,11 @@
 from django.contrib import messages
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import PermissionDenied, ImproperlyConfigured
+from django.core.exceptions import PermissionDenied, ImproperlyConfigured,\
+    ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.http.response import HttpResponseRedirect
-from django.views.generic.detail import SingleObjectMixin
+from django.shortcuts import get_object_or_404
 from django.views.generic.edit import DeleteView, UpdateView
 from django.views.generic.list import ListView
 
@@ -12,44 +13,82 @@ from emailtemplates.forms import EmailTemplateForm
 from emailtemplates.models import EmailMessageTemplate
 
 
-class EmailObjectMixin(SingleObjectMixin):
+class EmailObjectMixin(object):
     object_model = None    
+    object_slug_url_kwarg = None
+    object_pk_url_kwarg = None
+    slug_field = 'slug'
+    context_related_object_name = 'related_object'
     object_permissions = []
     
     def dispatch(self, *args, **kwargs):
-        self.related_object = self.get_object()
+        self.related_object = self.get_related_object()
         for perm in self.object_permissions:
             if not self.request.user.has_perm(perm, self.related_object):
                     raise PermissionDenied
         return super(EmailObjectMixin, self).dispatch(*args, **kwargs)
     
-    def get_queryset(self):
+    def get_related_object(self, queryset=None):
         """
-        Get the queryset to look an object up against. May not be called if
-        `get_object` is overridden.
+        Returns the object the view is displaying.
+
+        By default this requires `self.queryset` and a `pk` or `slug` argument
+        in the URLconf, but subclasses can override this to return any object.
         """
-        if self.queryset is None:
+        # Use a custom queryset if provided; this is required for subclasses
+        # like DateDetailView
+        if queryset is None:
             if self.object_model:
-                return self.object_model._default_manager.all()
+                queryset = self.object_model._default_manager.all()
             else:
                 raise ImproperlyConfigured("%(cls)s is missing a object_model." % {
                                                 'cls': self.__class__.__name__
                                             })
-        return self.queryset._clone()
+
+        # Next, try looking up by primary key.
+        pk = self.kwargs.get(self.object_pk_url_kwarg, None)
+        slug = self.kwargs.get(self.object_slug_url_kwarg, None)
+        if pk is not None:
+            queryset = queryset.filter(pk=pk)
+
+        # Next, try looking up by slug.
+        elif slug is not None:
+            queryset = queryset.filter(**{self.slug_field: slug})
+
+        # If none of those are defined, it's an error.
+        else:
+            raise AttributeError("Email template object-related view %s must be called with "
+                                 "either an object pk or a slug."
+                                 % self.__class__.__name__)
+
+        try:
+            # Get the single item from the filtered queryset
+            obj = queryset.get()
+        except ObjectDoesNotExist:
+            raise Http404("No %(verbose_name)s found matching the query" %
+                          {'verbose_name': queryset.model._meta.verbose_name})
+        return obj
     
     def get_context_data(self, **kwargs):
-        context = super(EmailObjectMixin, self).get_context_data(**kwargs)
-        context['related_object'] = self.related_object
-        return context  
+        """
+        Insert the related object into the context dict.
+        """
+        context = {}
+        if self.related_object:
+            context[self.context_related_object_name] = self.related_object
+        context.update(kwargs)
+        return super(EmailObjectMixin, self).get_context_data(**context)
 
 
-class EmailTemplateMixin(EmailObjectMixin):   
+class EmailTemplateMixin(object):
     # list of template-related permissions, 
     # e.g. can_view_template, can_edit_template
     template_permissions = []    
+    success_url_name = 'email_message_templates' 
      
-    def dispatch(self, *args, **kwargs):
-        self.generic_template = self.get_object()
+    def dispatch(self, *args, **kwargs):        
+        self.generic_template = get_object_or_404(EmailMessageTemplate, 
+                                                  id=kwargs.get('template_id'))
         if not self.generic_template.can_override_per_object:
             raise Http404()
         for perm in self.template_permissions:
@@ -57,13 +96,15 @@ class EmailTemplateMixin(EmailObjectMixin):
                     raise PermissionDenied
         return super(EmailTemplateMixin, self).dispatch(*args, **kwargs)
     
+    
     def get_success_url(self):
-        if self.pk_url_kwarg is not None:            
-            return reverse('email_message_templates', 
-                            kwargs={'%s' % self.pk_url_kwarg: self.related_object.id})
+        if self.object_pk_url_kwarg is not None:            
+            return reverse(self.success_url_name, 
+                           kwargs={'%s' % self.object_pk_url_kwarg: self.related_object.id})
         else:
-            return reverse('email_message_templates', 
-                            kwargs={'%s' % self.slug_url_kwarg: getattr(self.related_object, self.slug_field)}) 
+            slug = getattr(self.related_object, self.slug_field)
+            return reverse(self.success_url_name, 
+                           kwargs={'%s' % self.object_slug_url_kwarg: slug})
 
 
 class EmailMessageTemplateListView(EmailObjectMixin, ListView):
