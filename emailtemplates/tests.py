@@ -71,7 +71,20 @@ class TemplateRetrievalTest(TestCase):
         site = Site.objects.get(pk=2)
         template = EmailMessageTemplate.objects.get_template("Template 2", related_object=site)
         self.assertEqual(template.pk, 2)
-
+    
+    def test_retrieve_non_overriden_object_template(self):
+        """
+        Ensure the fallback (no object) template is returned
+        if a fallback template 'can_override_per_object' option is set to False
+        even though there are customized templates 
+        """
+        template = EmailMessageTemplate.objects.get(pk=1)
+        template.can_override_per_object = False
+        template.save()
+        site = Site.objects.get(pk=1)
+        template = EmailMessageTemplate.objects.get_template("Template 1", related_object=site)
+        self.assertEqual(template.pk, 1)   
+    
 
 class TemplatePreparationTest(TestCase):
     """

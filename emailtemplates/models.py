@@ -24,14 +24,17 @@ class EmailMessageTemplateManager(models.Manager):
             object_id = None
             content_type = None
         
-        try:
-            return self.get(name=name, object_id=object_id,
+        base_template = self.get(name=name, object_id=None, content_type=None, 
+                                 enabled=True)
+        
+        if base_template.can_override_per_object:        
+            try:
+                return self.get(name=name, object_id=object_id,
                             content_type=content_type, enabled=True)
-        except EmailMessageTemplate.DoesNotExist:
-            if not related_object:
-                raise
-            return self.get(name=name, object_id=None, content_type=None,
-                            enabled=True)
+            except EmailMessageTemplate.DoesNotExist:
+                if not related_object:
+                    raise   
+        return base_template
 
 
 class EmailMessageTemplate(models.Model, EmailMultiAlternatives):
@@ -224,7 +227,7 @@ class EmailMessageTemplate(models.Model, EmailMultiAlternatives):
     def related_item_display(self):
         return unicode(self.related_object) if self.related_object else 'None'
     related_item_display.short_description = "Related Item"
-
+    
     def __init__(self,*args,**kwargs):
         """
         Initialize the template, ensuring that the from_email is not set 
@@ -232,8 +235,7 @@ class EmailMessageTemplate(models.Model, EmailMultiAlternatives):
         """
         super(EmailMessageTemplate, self).__init__(*args,**kwargs)
         #resetting sender to default so EmailMessage won't stomp on it
-        self.from_email = None
-        
+        self.from_email = None                
 
     class Meta:
         ordering = ('name',)
