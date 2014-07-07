@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from django.core.management import call_command
 from django.core import mail
 from django.test import TestCase
+from django.test.client import Client
 from django.contrib.sites.models import Site
 from django.contrib.contenttypes.models import ContentType
 from django.template import Context
@@ -12,6 +13,7 @@ from django.conf import settings
 from models import EmailMessageTemplate
 from fields import validate_template_syntax
 from utils import send_mail, send_mass_mail, mail_admins, mail_managers
+from django.core.urlresolvers import reverse
 
 class TemplateRetrievalTest(TestCase):
     """
@@ -448,3 +450,118 @@ class UtilityFunctionTest(TestCase):
         self.assertEqual(mail.outbox[0].body, "Test 1 body *WORLD*")
         self.assertEqual(mail.outbox[0].to, ['admin1@example.com', 
                                              'admin2@example.com'])
+        
+
+class ViewsTest(TestCase):
+    fixtures = ['test_templates',]
+    urls = 'emailtemplates.test_urls'
+    
+    def setUp(self):
+        self.client = Client()
+        
+    def test_list_view(self):
+        related_object = Site.objects.get(pk=2)
+        url = reverse('email_message_templates', 
+                      kwargs={'object_id': related_object.id})
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code)
+    
+    def test_customize_view(self):
+        template = EmailMessageTemplate.objects.get(pk=6)
+        self.assertFalse(template.is_customized())
+        related_object = Site.objects.get(pk=2)
+        url = reverse('email_message_template_customize', 
+                      kwargs={'object_id': related_object.id,
+                              'template_id': template.id})
+        response = self.client.post(url, {'subject_template': 'Test {{ hello }}',
+                                          'body_template': 'Test {{ world }}'})
+        self.assertEqual(302, response.status_code)
+        
+        # The customized template has been created
+        EmailMessageTemplate.objects.get_template(template.name,
+                                                  related_object=related_object)
+        
+    def test_customize_view_cannot_override(self):
+        """
+        Ensure that 404 error is raised when try to customize 
+        a template that cannot be overriden.
+        """
+        template = EmailMessageTemplate.objects.get(pk=6)
+        template.can_override_per_object = False
+        template.save()
+        related_object = Site.objects.get(pk=2)
+        url = reverse('email_message_template_customize', 
+                      kwargs={'object_id': related_object.id,
+                              'template_id': template.id})
+        response = self.client.get(url)
+        self.assertEqual(404, response.status_code)
+        
+    def test_edit_view(self):
+        template = EmailMessageTemplate.objects.get(pk=4)
+        self.assertTrue(template.is_customized())
+        related_object = Site.objects.get(pk=1)
+        url = reverse('email_message_template_edit', 
+                      kwargs={'object_id': related_object.id,
+                              'template_id': template.id})
+        response = self.client.post(url, {'subject_template': 'Test {{ hello }}',
+                                          'body_template': 'Test {{ world }}'})
+        self.assertEqual(302, response.status_code)
+        
+        # The customized template has been created
+        tpl = EmailMessageTemplate.objects.get_template(template.name,
+                                                        related_object=related_object)
+        self.assertEqual('Test {{ hello }}', tpl.subject_template)
+        self.assertEqual('Test {{ world }}', tpl.body_template)
+    
+    def test_edit_view_no_tpl_perms(self):
+        """
+        Ensure that 403 is raised if the user 
+        has no specified permissions to edit the template
+        """
+        template = EmailMessageTemplate.objects.get(pk=4)
+        self.assertTrue(template.is_customized())
+        related_object = Site.objects.get(pk=1)
+        url = reverse('email_message_template_edit_tpl_perm', 
+                      kwargs={'object_id': related_object.id,
+                              'template_id': template.id})
+        response = self.client.get(url)
+        self.assertEqual(403, response.status_code)
+    
+    def test_edit_view_no_obj_perms(self):
+        """
+        Ensure that 403 is raised if the user 
+        has no specified permissions for the related object
+        """
+        template = EmailMessageTemplate.objects.get(pk=4)
+        self.assertTrue(template.is_customized())
+        related_object = Site.objects.get(pk=1)
+        url = reverse('email_message_template_edit_obj_perm', 
+                      kwargs={'object_id': related_object.id,
+                              'template_id': template.id})
+        response = self.client.get(url)
+        self.assertEqual(403, response.status_code)
+        
+    def test_delete_view(self):
+        template = EmailMessageTemplate.objects.get(pk=4)
+        # stash the name
+        name = template.name
+        self.assertTrue(template.is_customized())
+        related_object = Site.objects.get(pk=1)
+        url = reverse('email_message_template_revert_to_default', 
+                      kwargs={'object_id': related_object.id,
+                              'template_id': template.id})
+        response = self.client.post(url)
+        self.assertEqual(302, response.status_code)
+        
+        try:
+            EmailMessageTemplate.objects.get(pk=4)
+            raise
+        except:
+            # The customized template has been deleted
+            pass
+        
+        # Fall back to the base template
+        EmailMessageTemplate.objects.get_template(name,
+                                                  related_object=related_object)
+        
+        

@@ -200,7 +200,7 @@ class EmailMessageTemplate(models.Model, EmailMultiAlternatives):
             and self.type == 'text/html'
             
     def is_customized(self):
-        return self.object_id
+        return self.object_id is not None
         
                         
     def send(self, fail_silently=False):

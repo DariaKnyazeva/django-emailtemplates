@@ -116,10 +116,13 @@ class EmailMessageTemplateListView(EmailObjectMixin, ListView):
     
     def get_queryset(self, **kwargs):
         tpl = []
-        names = EmailMessageTemplate.objects.values('name').distinct()
+        names = EmailMessageTemplate.objects.exclude(enabled=False).values('name').distinct()
         for name in names:
-            template = EmailMessageTemplate.objects.get_template(name['name'], 
-                                                                 self.related_object)
+            try:
+                template = EmailMessageTemplate.objects.get_template(name['name'], 
+                                                                     self.related_object)
+            except EmailMessageTemplate.DoesNotExist:
+                template = EmailMessageTemplate.objects.get_template(name['name'])
             if template.can_override_per_object:
                 tpl.append(template)
         ids = [t.id for t in tpl]

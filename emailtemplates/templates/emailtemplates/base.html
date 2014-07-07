@@ -33,12 +33,6 @@
   {% endcompress %}
   <!-- More ideas for your <head> here: h5bp.com/d/head-Tips -->
 
-  <!-- All JavaScript at the bottom, except this Modernizr build.
-       Modernizr enables HTML5 elements & feature detects for optimal performance.
-       Create your own custom Modernizr build: www.modernizr.com/download/ -->
-  {% compress js %}
-  <script src="{% static 'js/libs/modernizr-2.6.2-respond-1.1.0.min.js' %}"></script>
-  {% endcompress %}
 </head>
 <body class="{% block body_class %}{% endblock %}" {% block body_attributes %}{% endblock %}>
 {% block body %}
