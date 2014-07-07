@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "emailtemplates/base.html" %}
 
 {% block title %}Manage Emails{% endblock %}
 
@@ -49,17 +49,9 @@
         <tr>
             <td><a href="#" id="link_{{ tpl.id }}" onclick="launch_modal('dialog-{{ tpl.id }}');">{{ tpl.name }}</a></td>
             <td>{{ tpl.description}}</td>
-            {% if not tpl.is_customized %}
-                <td>
-                    <a href="{% url 'email_message_template_customize' object_id=related_object.id template_id=tpl.id %}" 
-                        class="btn btn-success"><i class="fa fa-magic"></i>  Customize</a>
-                </td>
-            {% else %}
-                <td><a href="{% url 'email_message_template_edit' object_id=related_object.id template_id=tpl.id %}" 
-                        class="btn btn-warning"><i class="fa fa-edit"></i> Edit</a> <br/> 
-                <a href="{% url 'email_message_template_revert_to_default' object_id=related_object.id template_id=tpl.id %}" 
-                        class="btn btn-danger"><i class="fa fa-times"></i> Revert to Default</a></td>
-            {% endif %}
+            <td>
+                {% include "emailtemplates/template_actions.html" %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>

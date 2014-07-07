@@ -1,0 +1,6 @@
+{% if not tpl.is_customized %}
+    <a href="#" class="btn btn-success"><i class="fa fa-magic"></i>  Customize</a>
+{% else %}
+    <a href="#" class="btn btn-warning"><i class="fa fa-edit"></i> Edit</a> <br/> 
+    <a href="#" class="btn btn-danger"><i class="fa fa-times"></i> Revert to Default</a>
+{% endif %}
