@@ -21,11 +21,14 @@ class EmailObjectMixin(object):
     context_related_object_name = 'related_object'
     object_permissions = []
     
+    def has_permission(self, perm, request):
+        return request.user.has_perm(perm, self.related_object)
+    
     def dispatch(self, *args, **kwargs):
         self.related_object = self.get_related_object()
         for perm in self.object_permissions:
-            if not self.request.user.has_perm(perm, self.related_object):
-                    raise PermissionDenied
+            if not self.has_permission(perm, self.request):
+                raise PermissionDenied
         return super(EmailObjectMixin, self).dispatch(*args, **kwargs)
     
     def get_related_object(self, queryset=None):
