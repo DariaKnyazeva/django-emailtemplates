@@ -48,7 +48,7 @@
         {% for tpl in object_list %}
         <tr>
             <td><a href="#" id="link_{{ tpl.id }}" onclick="launch_modal('dialog-{{ tpl.id }}');">{{ tpl.name }}</a></td>
-            <td>{{ tpl.description}}</td>
+            <td>{{ tpl.description|truncatewords:10 }}</td>
             <td>
                 {% include "emailtemplates/template_actions.html" %}
             </td>
