@@ -11,11 +11,12 @@ setup(
     description='Templating system for application-generated emails',
     author='Michael O''Connor',
     author_email='michael@mcoconnor.net',
-    url='https://github.com/mcoconnor/django-emailtemplates',
+    url='https://github.com/DariaKnyazeva/django-emailtemplates.git@template_views',
     license='MIT',
     packages=['emailtemplates'],
     install_requires=[
         'django-appconf',
+        'django-compressor',
     ],
     extras_require = {
         'text_autogen':  ["html2text"],
