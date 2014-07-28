@@ -25,6 +25,7 @@
         <h4 class="modal-title" id="dialog-{{ tpl.id }}Label">Email Template: {{tpl.name}}</h4>
       </div>
       <div class="modal-body">
+         <p>{{ tpl.description|linebreaks }}</p>
          <p><b>Subject Template:</b></p>
   		 <p>{{ tpl.subject_template }}</p>
          <p><b>Body Template:</b></p>s

@@ -5,7 +5,7 @@
 {% block page_title %}Edit: {{ object.name }} {% endblock page_title %}
 
 {% block content %}
-{{ object.description }}
+{{ object.description|linebreaks }}
 <form method="POST" action="">
     {% csrf_token%}
     {{ form }}
