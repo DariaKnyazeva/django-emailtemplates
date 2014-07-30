@@ -119,17 +119,50 @@ class EmailMessageTemplateListView(EmailObjectMixin, ListView):
     
     def get_queryset(self, **kwargs):
         tpl = []
-        names = EmailMessageTemplate.objects.exclude(enabled=False).values('name').distinct()
+        names = EmailMessageTemplate.objects.values('name').distinct()
         for name in names:
             try:
                 template = EmailMessageTemplate.objects.get_template(name['name'], 
-                                                                     self.related_object)
+                                                                     self.related_object,
+                                                                     enabled_only=False)
             except EmailMessageTemplate.DoesNotExist:
-                template = EmailMessageTemplate.objects.get_template(name['name'])
+                template = EmailMessageTemplate.objects.get_template(name['name'], enabled_only=False)
             if template.can_override_per_object:
                 tpl.append(template)
         ids = [t.id for t in tpl]
         return EmailMessageTemplate.objects.filter(id__in=ids)
+
+
+class EmailMessageTemplateDisableView(EmailTemplateMixin, EmailObjectMixin, UpdateView):
+    """
+    Disables the email templates
+    """
+    model = EmailMessageTemplate 
+    pk_url_kwarg = 'template_id'
+     
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.enabled = False
+        self.object.save()
+        messages.add_message(self.request, messages.SUCCESS, 
+                             'Email Template has been disabled.')
+        return HttpResponseRedirect(self.get_success_url())
+
+
+class EmailMessageTemplateEnableView(EmailTemplateMixin, EmailObjectMixin, UpdateView):
+    """
+    Enables the email templates
+    """
+    model = EmailMessageTemplate 
+    pk_url_kwarg = 'template_id'
+     
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.enabled = True
+        self.object.save()
+        messages.add_message(self.request, messages.SUCCESS, 
+                             'Email Template has been enabled.')
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class EmailMessageTemplateCustomizeView(EmailTemplateMixin, EmailObjectMixin, UpdateView):

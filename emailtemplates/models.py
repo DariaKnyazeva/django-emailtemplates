@@ -9,7 +9,7 @@ from fields import SeparatedValuesField, validate_template_syntax
 
 class EmailMessageTemplateManager(models.Manager):
 
-    def get_template(self, name, related_object=None):
+    def get_template(self, name, related_object=None, enabled_only=True):
         """
         If a related object is specified, we'll first try to retrieve a template 
         that matches both the name and the object, and if none exists, we'll try 
@@ -24,13 +24,20 @@ class EmailMessageTemplateManager(models.Manager):
             object_id = None
             content_type = None
         
-        base_template = self.get(name=name, object_id=None, content_type=None, 
-                                 enabled=True)
+        if enabled_only:
+            base_template = self.get(name=name, object_id=None, content_type=None, 
+                                     enabled=True)
+        else:
+            base_template = self.get(name=name, object_id=None, content_type=None)
         
         if base_template.can_override_per_object:        
             try:
-                return self.get(name=name, object_id=object_id,
+                if enabled_only:
+                    return self.get(name=name, object_id=object_id,
                             content_type=content_type, enabled=True)
+                else:
+                    return self.get(name=name, object_id=object_id,
+                            content_type=content_type)
             except EmailMessageTemplate.DoesNotExist:
                 if not related_object:
                     raise   
