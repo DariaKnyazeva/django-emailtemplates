@@ -18,7 +18,11 @@ setup(
         'emailtemplates.migrations',
     ],
     package_data={
-        'emailtemplates': ['fixtures/*.json', 'templates/*.html', 'static/emailtemplates/js/*.js']
+        'emailtemplates': [
+            'fixtures/*.json', 
+            'templates/emailtemplates/*.html', 
+            'static/emailtemplates/js/*.js',
+        ]
     },
     install_requires=[
         'django-appconf',
