@@ -14,6 +14,12 @@ setup(
     url='https://github.com/DariaKnyazeva/django-emailtemplates.git@template_views',
     license='MIT',
     packages=['emailtemplates'],
+    package_data=[
+        'fixtures',
+        'migrations',
+        'templates',
+        'static',
+    ],
     install_requires=[
         'django-appconf',
         'django-compressor',
