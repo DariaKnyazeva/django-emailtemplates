@@ -15,11 +15,11 @@ setup(
     license='MIT',
     packages=[
         'emailtemplates',
-        'emailtemplates.fixtures',
         'emailtemplates.migrations',
-        'emailtemplates.templates',
-        'emailtemplates.static',
     ],
+    package_data={
+        'emailtemplates': ['fixtures/*.json', 'templtes/*.html', 'static/*.js']
+    },
     install_requires=[
         'django-appconf',
         'django-compressor',
