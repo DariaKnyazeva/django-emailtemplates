@@ -13,12 +13,12 @@ setup(
     author_email='michael@mcoconnor.net',
     url='https://github.com/DariaKnyazeva/django-emailtemplates.git@template_views',
     license='MIT',
-    packages=['emailtemplates'],
-    package_data=[
-        'fixtures',
-        'migrations',
-        'templates',
-        'static',
+    packages=[
+        'emailtemplates',
+        'emailtemplates.fixtures',
+        'emailtemplates.migrations',
+        'emailtemplates.templates',
+        'emailtemplates.static',
     ],
     install_requires=[
         'django-appconf',
